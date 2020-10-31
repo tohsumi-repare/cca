@@ -1,0 +1,147 @@
+#ifndef MOLBIOLIB_PAIREDSEQUENCEALIGNMENTFRAGMENTREADER_H
+#define MOLBIOLIB_PAIREDSEQUENCEALIGNMENTFRAGMENTREADER_H
+
+#include "src/Objects/Location.hpp"
+#include "src/Functions/ReaderWriters/Alignments/SequenceAlignmentFragmentReader.hpp"
+
+
+/** \file PairedSequenceAlignmentFragmentReader.hpp
+
+/** Base class to read paired alignment files.
+ *  Must pass in a class derived from SequenceAlignmentFragmentReader.
+ */
+class PairedSequenceAlignmentFragmentReader {
+public:
+   typedef SequenceLocation location_type;
+   typedef location_type::position_type position_type;
+   typedef position_type::element_type element_type;
+   typedef location_type::info_type info_type;
+   SequenceAlignmentFragment currentFragment;
+
+   PairedSequenceAlignmentFragmentReader(SequenceAlignmentFragmentReader& theReaderA, SequenceAlignmentFragmentReader& theReaderB, size_t minimumDistance = 0, size_t maximumDistance = numeric_limits<size_t>::max(), bool excludeDistances = false) : readerA(theReaderA), readerB(theReaderB) { 
+#ifdef DEBUG
+      // Both readers must be initialized separately before being
+      // passed to this class.
+      assert(readerA.indicesOpened && readerB.indicesOpened);
+      // For this to be efficient, the target indices must be precomputed.
+      assert(readerA.doTargetIndex && readerB.doTargetIndex);
+#endif
+      numA = readerA.size();
+      numB = readerB.size();
+      minDist = minimumDistance;
+      maxDist = maximumDistance;
+      excludeDist = excludeDistances;
+      theSize = numeric_limits<size_t>::max();
+   } 
+
+
+   size_t numErrors() {
+      return (readerA.numErrors() + readerB.numErrors());
+   }
+
+
+   bool readPairedReads() {
+      return true;
+   }
+
+
+   void resetToBegin() {
+      readerA.resetToBegin();
+      readerB.resetToBegin();
+   }
+
+
+   pair<SequenceAlignmentFragment, SequenceAlignmentFragment> getFragment() {
+      return make_pair(readerA.currentFragment, readerB.currentFragment);
+   }
+
+
+   pair<SequenceAlignmentFragment, SequenceAlignmentFragment> operator()() {
+      return make_pair(readerA.currentFragment, readerB.currentFragment);
+   }
+
+
+
+   bool withinDist() {
+      // The complement of the return value is used for excludeDist true.
+      if (readerA.currentFragment.globalQueryLocation.contig() != 
+          readerB.currentFragment.globalQueryLocation.contig())
+         return false;
+      element_type posA, posB;
+      if (readerA.currentFragment.globalQueryLocation.strand() == "+") {
+         if (readerA.currentFragment.globalTargetLocation.strand() == "+")
+            posA = readerA.currentFragment.globalTargetLocation.position().lower();
+         else
+            posA = readerA.currentFragment.globalTargetLocation.position().upper();
+      } else {
+         if (readerA.currentFragment.globalTargetLocation.strand() == "-")
+            posA = readerA.currentFragment.globalTargetLocation.position().lower();
+         else
+            posA = readerA.currentFragment.globalTargetLocation.position().upper();
+      }
+      if (readerB.currentFragment.globalQueryLocation.strand() == "+") {
+         if (readerB.currentFragment.globalTargetLocation.strand() == "+")
+            posB = readerB.currentFragment.globalTargetLocation.position().lower();
+         else
+            posB = readerB.currentFragment.globalTargetLocation.position().upper();
+      } else {
+         if (readerB.currentFragment.globalTargetLocation.strand() == "-")
+            posB = readerB.currentFragment.globalTargetLocation.position().lower();
+         else
+            posB = readerB.currentFragment.globalTargetLocation.position().upper();
+      }
+      element_type dist = (posB > posA) ? (posB - posA) : (posA - posB);
+      if ((dist >= minDist) && (dist <= maxDist))
+         return true;
+      else
+         return false;
+   }
+
+
+   size_t size() {
+      if (theSize == numeric_limits<size_t>::max()) {
+#ifdef DEBUG
+         cerr << "Warning in PairedSequenceAlignmentFragmentReader::size().  First time computing this value is time consuming." << endl;
+#endif
+         size_t numValid = 0; 
+         StringTable targetContigsA = readerA.getTargetContigs();
+         size_t numContigs = targetContigsA.size();
+         for (size_t i = 0; i < numContigs; ++i) {
+            string& currContig = targetContigsA[i];
+            IndexTable queriesA = readerA.alignmentFragmentsRelatedToTargetContig(currContig),
+                       queriesB = readerB.alignmentFragmentsRelatedToTargetContig(currContig);
+            size_t numA = queriesA.size(), numB = queriesB.size();
+            for (size_t j = 0; j < numA; ++j) {
+               readerA[queriesA[j]];
+               for (size_t k = 0; k < numB; ++j) {
+                  readerB[queriesB[k]];
+                  if (withinDist()) ++numValid;
+               }
+            }
+         }
+
+         if (excludeDist) 
+            theSize = (readerA.size() * readerB.size()) - numValid;
+         else
+            theSize =  numValid;
+         return theSize;
+      } else
+         return theSize;
+   }
+
+   
+
+
+
+
+private:
+   SequenceAlignmentFragmentReader& readerA, readerB;
+   bool excludeDist;
+   size_t numA, numB, minDist, maxDist;
+   size_t theSize;
+
+
+};
+
+#endif
+
