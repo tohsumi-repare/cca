@@ -1,5 +1,12 @@
 # CrisprCountsAnalysis (CCA)
 
+Please take a look at the documentation in the doc subdirectory.   They will
+contain the input file format and more explanations for running CCA.
+
+
+-------------------------------------------------------------------------------
+
+
 To build the image where you downloaded the source, do
 
 docker build -t cca .
