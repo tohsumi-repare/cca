@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
          ofp << "<h2>Stratification of top CCA score and Z-score hits plots with the top-most hit on the right:</h2>" << endl;
          ofp << "<img src=\"" << ofp_head << ".stratas.png\", height = 400> &nbsp;&nbsp&nbsp; <img src =\"" << ofp_head << ".stratas_z.png\", height = 400><br>" << endl;
        }
-       ofp << "<h3>Points on a vertical line mean that the point belongs to the set to the right of that line.</h3><br>" << endl;
+       ofp << "<h3>Points on a vertical line mean that the point belongs to the set to the left of that line.</h3><br>" << endl;
      }
      ofp << "<br><hr><br>" << endl;
    }
