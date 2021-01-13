@@ -1397,7 +1397,7 @@ int main(int argc, char* argv[])
   CommandArgumentBoolDefaultDoc("CHEMO_PAIRED", CHEMO_PAIRED, true, "If true and CHEMO is true, use paired information in REPMAP to get the median and Q3 difference in depletion.");
   CommandArgumentBoolDefaultDoc("CHEMO_NO_DEPLETION", CHEMO_NO_DEPLETION, false, "If true, do not use test depletion or check if test is nonessential in this mode.");
   CommandArgumentBoolDefaultDoc("RESISTOR_SCREEN", RESISTOR_SCREEN, false, "If true, the COUNTS and REPMAP file is for a resistor screen.   Thus, a full CCA analysis is not done, but rater a resistor analysis is done.");
-  CommandArgumentDoubleDefaultDoc("MAX_CONTROL_RATIO", MAX_CONTROL_RATIO, 1.0, "If > 0, then cap the input control count such that the non-T0 controls are at most this time as much as the T0 count.");
+  CommandArgumentDoubleDefaultDoc("MAX_CONTROL_RATIO", MAX_CONTROL_RATIO, -1.0, "If > 0, then cap the input control count such that the non-T0 controls are at most this time as much as the T0 count.");
   CommandArgumentFileOutDefaultDoc("RESISTOR_OUT", RESISTOR_OUT, "", "If RESISTOR_SCREEN is true, then output the resistor analysis to this file.   Not using OUT to avoid confusion.");
   CommandArgumentBoolDefaultDoc("ADD_COEFF_VAR", ADD_COEFF_VAR, true, "If true, then add the coefficient of variation and distance of the mean coefficient of variation.  This is to find genes whose depletions vary a lot, when the distance is positively large.");
   CommandArgumentDoubleDefaultDoc("MAX_MEDIAN_DIFF", MAX_MEDIAN_DIFF, 30.0, "If the median of the normalized counts differs by more than this, a warning message is produced.");
@@ -1472,6 +1472,10 @@ int main(int argc, char* argv[])
   CommandArgumentFileInDefaultDoc("UNIPROT", UNIPROT, "/root/data/Uniprot/uniprot-human-gene-function-go.txt", "Uniprot file.");
   EndCommandArguments
 
+  if (MAX_CONTROL_RATIO == -1.0) {
+    if (CHEMO || RESISTOR_SCREEN) MAX_CONTROL_RATIO = 0.0;
+    else MAX_CONTROL_RATIO = 1.0;
+  }
 
   if (SGRNA_PAIRED_DIFFERENCES) {
     if (CHEMO) {
